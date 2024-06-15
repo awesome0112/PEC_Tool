@@ -1,25 +1,24 @@
 package utils.autoUnitTestUtil.autoTesting;
 
+import controller.PEC_ToolController;
+import org.eclipse.jdt.core.dom.ASTNode;
+import org.eclipse.jdt.core.dom.Block;
+import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
 import utils.FilePath;
-import utils.autoUnitTestUtil.concolicResult.CoveredStatement;
-import controller.NTDAUTController;
-import utils.autoUnitTestUtil.concolicResult.ConcolicTestData;
-import utils.autoUnitTestUtil.concolicResult.ConcolicTestResult;
 import utils.autoUnitTestUtil.algorithms.FindPath;
 import utils.autoUnitTestUtil.algorithms.SymbolicExecution;
+import utils.autoUnitTestUtil.autoTesting.PairwiseTesting.*;
 import utils.autoUnitTestUtil.cfg.CfgBlockNode;
 import utils.autoUnitTestUtil.cfg.CfgEndBlockNode;
 import utils.autoUnitTestUtil.cfg.CfgNode;
+import utils.autoUnitTestUtil.testResult.*;
 import utils.autoUnitTestUtil.dataStructure.MarkedPath;
 import utils.autoUnitTestUtil.dataStructure.MarkedStatement;
 import utils.autoUnitTestUtil.dataStructure.Path;
 import utils.autoUnitTestUtil.parser.ASTHelper;
 import utils.autoUnitTestUtil.parser.ProjectParser;
 import utils.autoUnitTestUtil.utils.Utils;
-import org.eclipse.jdt.core.dom.ASTNode;
-import org.eclipse.jdt.core.dom.Block;
-import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.MethodDeclaration;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -27,9 +26,13 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 
-public class NTDTesting {
+public class PECTesting {
+
     private static CompilationUnit compilationUnit;
     private static String simpleClassName;
     private static String fullyClonedClassName;
@@ -42,13 +45,13 @@ public class NTDTesting {
     private static Method method;
     private static ASTNode testFunc;
 
-    private NTDTesting() {
+    private PECTesting() {
     }
 
     private static long totalUsedMem = 0;
     private static long tickCount = 0;
 
-    public static ConcolicTestResult runFullConcolic(String path, String methodName, String className, NTDAUTController.Coverage coverage) throws IOException, NoSuchMethodException, InvocationTargetException, IllegalAccessException, ClassNotFoundException, NoSuchFieldException, InterruptedException {
+    public static PECResult runFullPEC(String path, String methodName, String className, PEC_ToolController.Coverage coverage) throws IOException, NoSuchMethodException, InvocationTargetException, IllegalAccessException, ClassNotFoundException, NoSuchFieldException, InterruptedException {
 
         setup(path, className, methodName);
         setupCfgTree(coverage);
@@ -68,20 +71,81 @@ public class NTDTesting {
 
         T.scheduleAtFixedRate(memoryTask, 0, 1); //0 delay and 5 ms tick
 
-        long startRunTestTime = System.nanoTime();
-        ConcolicTestResult result = startGenerating(coverage);
-        long endRunTestTime = System.nanoTime();
+        ValueDictionary valueDictionary1 = new ValueDictionary(parameterNames.size());
+        ValueDictionary valueDictionary2 = new ValueDictionary(parameterNames.size());
+        ValueDictionary valueDictionary3 = new ValueDictionary(parameterNames.size());
 
+        long startRunTestTime = System.nanoTime();
+
+        ConcolicTestResult result = startGenerating(coverage);
+
+        long endRunTestTime = System.nanoTime();
         double runTestDuration = (endRunTestTime - startRunTestTime) / 1000000.0;
         float usedMem = ((float) totalUsedMem) / tickCount / 1024 / 1024;
+        System.out.println("DS1: " + runTestDuration + " ms, " + usedMem + " MB");
+//        System.out.println(result);
+        System.out.println(result.getFullTestData().size());
 
-        result.setTestingTime(runTestDuration);
-        result.setUsedMemory(usedMem);
+        PECDataSetResult DS1 = new PECDataSetResult(runTestDuration, usedMem, result.getFullCoverage(), result.getFullTestData().size(), result.getFullTestDataSet());
 
-        return result;
+        List<Parameter> parameterList1 = PairwiseTestingUtils.convertTestResultToParameterValues(result);
+        generatePairWiseTestdata(valueDictionary1, parameterList1);
+        valueDictionary1.addDistinctToTestDataSet(result.getFullTestDataSet());
+
+        endRunTestTime = System.nanoTime();
+        runTestDuration = (endRunTestTime - startRunTestTime) / 1000000.0;
+        usedMem = ((float) totalUsedMem) / tickCount / 1024 / 1024;
+        System.out.println("DS2: " + runTestDuration + " ms, " + usedMem + " MB");
+//        System.out.println(valueDictionary1);
+        System.out.println(valueDictionary1.getTestDataSetSize());
+
+        PECDataSetResult DS2 = new PECDataSetResult(runTestDuration, usedMem, result.getFullCoverage(), valueDictionary1.getTestDataSetSize(), valueDictionary1.getTestDataSet());
+
+        List<Parameter> parameterList2 = GetParameterList.getFromAnalyzeSimpleConditions(cfgBeginNode, parameterClasses, parameterNames);
+        parameterList2 = PairwiseTestingUtils.merge2ParameterList(parameterList1, parameterList2);
+        generatePairWiseTestdata(valueDictionary2, parameterList2);
+        valueDictionary2.addDistinctToTestDataSet(result.getFullTestDataSet());
+
+        endRunTestTime = System.nanoTime();
+        runTestDuration = (endRunTestTime - startRunTestTime) / 1000000.0;
+        usedMem = ((float) totalUsedMem) / tickCount / 1024 / 1024;
+        System.out.println("DS3: " + runTestDuration + " ms, " + usedMem + " MB");
+//        System.out.println(valueDictionary2);
+        System.out.println(valueDictionary2.getTestDataSetSize());
+
+        PECDataSetResult DS3 = new PECDataSetResult(runTestDuration, usedMem, result.getFullCoverage(), valueDictionary2.getTestDataSetSize(), valueDictionary2.getTestDataSet());
+
+        List<Parameter> parameterList3 = GetParameterList.getFromSymbolicExecuteAllPaths(cfgBeginNode, parameters, parameterClasses, parameterNames);
+        parameterList3 = PairwiseTestingUtils.merge2ParameterList(parameterList2, parameterList3);
+        generatePairWiseTestdata(valueDictionary3, parameterList3);
+        valueDictionary3.addDistinctToTestDataSet(result.getFullTestDataSet());
+
+        endRunTestTime = System.nanoTime();
+        runTestDuration = (endRunTestTime - startRunTestTime) / 1000000.0;
+        usedMem = ((float) totalUsedMem) / tickCount / 1024 / 1024;
+        System.out.println("DS4: " + runTestDuration + " ms, " + usedMem + " MB");
+//        System.out.println(valueDictionary3);
+        System.out.println(valueDictionary3.getTestDataSetSize());
+
+        PECDataSetResult DS4 = new PECDataSetResult(runTestDuration, usedMem, result.getFullCoverage(), valueDictionary3.getTestDataSetSize(), valueDictionary3.getTestDataSet());
+
+        return new PECResult(DS1, DS2, DS3, DS4);
     }
 
-    private static ConcolicTestResult startGenerating(NTDAUTController.Coverage coverage) throws InvocationTargetException, IllegalAccessException, ClassNotFoundException, NoSuchFieldException {
+    private static void generatePairWiseTestdata(ValueDictionary valueDictionary, List<Parameter> parameterList) {
+        PairwiseTestingUtils.generateFirstTwoPairWiseTestData(valueDictionary, parameterList);
+
+        for (int i = 2; i < parameterList.size(); i++) {
+            List<Object> visitingParameterValues = parameterList.get(i).getValues();
+
+            List<Pair> pairs = PairwiseTestingUtils.createPairsBetween2Paras(visitingParameterValues, i, parameterList);
+
+            PairwiseTestingUtils.IPO_H(valueDictionary, i, parameterList, pairs);
+            PairwiseTestingUtils.IPO_V(valueDictionary, i, parameterList, pairs);
+        }
+    }
+
+    private static ConcolicTestResult startGenerating(PEC_ToolController.Coverage coverage) throws InvocationTargetException, IllegalAccessException, ClassNotFoundException, NoSuchFieldException {
         ConcolicTestResult testResult = new ConcolicTestResult();
         int testCaseID = 1;
         Object[] evaluatedValues = utils.autoUnitTestUtil.testDriver.Utils.createRandomTestData(parameterClasses);
@@ -99,7 +163,7 @@ public class NTDTesting {
         List<CoveredStatement> coveredStatements = CoveredStatement.switchToCoveredStatementList(markedStatements);
 
         testResult.addToFullTestData(new ConcolicTestData(parameterNames, parameterClasses, evaluatedValues, coveredStatements,
-                output, runTestDuration, calculateRequiredCoverage(coverage), calculateFunctionCoverage(), calculateSourceCodeCoverage(), testCaseID++));
+                output, runTestDuration, calculateRequiredCoverage(coverage), calculateFunctionCoverage(), calculateSourceCodeCoverage()));
 
         boolean isTestedSuccessfully = true;
         int i = 5;
@@ -129,7 +193,7 @@ public class NTDTesting {
 
             coveredStatements = CoveredStatement.switchToCoveredStatementList(markedStatements);
 
-            testResult.addToFullTestData(new ConcolicTestData(parameterNames, parameterClasses, evaluatedValues, coveredStatements, output, runTestDuration, calculateRequiredCoverage(coverage), calculateFunctionCoverage(), calculateSourceCodeCoverage(), testCaseID++));
+            testResult.addToFullTestData(new ConcolicTestData(parameterNames, parameterClasses, evaluatedValues, coveredStatements, output, runTestDuration, calculateRequiredCoverage(coverage), calculateFunctionCoverage(), calculateSourceCodeCoverage()));
 
             uncoveredNode = findUncoverNode(cfgBeginNode, coverage);
             System.out.println("Uncovered Node: " + uncoveredNode);
@@ -184,7 +248,7 @@ public class NTDTesting {
         return result.toString();
     }
 
-    private static CfgNode findUncoverNode(CfgNode cfgNode, NTDAUTController.Coverage coverage) {
+    private static CfgNode findUncoverNode(CfgNode cfgNode, PEC_ToolController.Coverage coverage) {
         switch (coverage) {
             case STATEMENT:
                 return MarkedPath.findUncoveredStatement(cfgNode);
@@ -204,17 +268,17 @@ public class NTDTesting {
     }
 
     private static double calculateFullTestSuiteCoverage() throws ClassNotFoundException, NoSuchFieldException, IllegalAccessException {
-        int totalFunctionStatement = (int) Class.forName(fullyClonedClassName).getField(getTotalFunctionCoverageVariableName((MethodDeclaration) testFunc, NTDAUTController.Coverage.STATEMENT)).get(null);
+        int totalFunctionStatement = (int) Class.forName(fullyClonedClassName).getField(getTotalFunctionCoverageVariableName((MethodDeclaration) testFunc, PEC_ToolController.Coverage.STATEMENT)).get(null);
         int totalCovered = MarkedPath.getFullTestSuiteTotalCoveredStatements();
         return (totalCovered * 100.0) / totalFunctionStatement;
     }
 
-    private static double calculateRequiredCoverage(NTDAUTController.Coverage coverage) throws ClassNotFoundException, NoSuchFieldException, IllegalAccessException {
+    private static double calculateRequiredCoverage(PEC_ToolController.Coverage coverage) throws ClassNotFoundException, NoSuchFieldException, IllegalAccessException {
         int totalFunctionCoverage = (int) Class.forName(fullyClonedClassName).getField(getTotalFunctionCoverageVariableName((MethodDeclaration) testFunc, coverage)).get(null);
         int totalCovered = 0;
-        if (coverage == NTDAUTController.Coverage.STATEMENT) {
+        if (coverage == PEC_ToolController.Coverage.STATEMENT) {
             totalCovered = MarkedPath.getTotalCoveredStatement();
-        } else if (coverage == NTDAUTController.Coverage.BRANCH) {
+        } else if (coverage == PEC_ToolController.Coverage.BRANCH) {
             totalCovered = MarkedPath.getTotalCoveredBranch();
             System.out.println(totalCovered);
         }
@@ -222,7 +286,7 @@ public class NTDTesting {
     }
 
     private static double calculateFunctionCoverage() throws ClassNotFoundException, NoSuchFieldException, IllegalAccessException {
-        int totalFunctionStatement = (int) Class.forName(fullyClonedClassName).getField(getTotalFunctionCoverageVariableName((MethodDeclaration) testFunc, NTDAUTController.Coverage.STATEMENT)).get(null);
+        int totalFunctionStatement = (int) Class.forName(fullyClonedClassName).getField(getTotalFunctionCoverageVariableName((MethodDeclaration) testFunc, PEC_ToolController.Coverage.STATEMENT)).get(null);
         int totalCoveredStatement = MarkedPath.getTotalCoveredStatement();
         return (totalCoveredStatement * 100.0) / (totalFunctionStatement * 1.0);
     }
@@ -258,7 +322,7 @@ public class NTDTesting {
         fullyClonedClassName = "clonedProject." + packetName + className;
     }
 
-    private static void setupCfgTree(NTDAUTController.Coverage coverage) {
+    private static void setupCfgTree(PEC_ToolController.Coverage coverage) {
         Block functionBlock = Utils.getFunctionBlock(testFunc);
 
         cfgBeginNode = new CfgNode();
@@ -279,7 +343,7 @@ public class NTDTesting {
         ASTHelper.generateCFG(block, compilationUnit, firstLine, getCoverageType(coverage));
     }
 
-    private static ASTHelper.Coverage getCoverageType(NTDAUTController.Coverage coverage) {
+    private static ASTHelper.Coverage getCoverageType(PEC_ToolController.Coverage coverage) {
         switch (coverage) {
             case STATEMENT:
                 return ASTHelper.Coverage.STATEMENT;
@@ -290,16 +354,16 @@ public class NTDTesting {
         }
     }
 
-    private static String getTotalFunctionCoverageVariableName(MethodDeclaration methodDeclaration, NTDAUTController.Coverage coverage) {
+    private static String getTotalFunctionCoverageVariableName(MethodDeclaration methodDeclaration, PEC_ToolController.Coverage coverage) {
         StringBuilder result = new StringBuilder();
         result.append(methodDeclaration.getReturnType2());
         result.append(methodDeclaration.getName());
         for (int i = 0; i < methodDeclaration.parameters().size(); i++) {
             result.append(methodDeclaration.parameters().get(i));
         }
-        if (coverage == NTDAUTController.Coverage.STATEMENT) {
+        if (coverage == PEC_ToolController.Coverage.STATEMENT) {
             result.append("TotalStatement");
-        } else if (coverage == NTDAUTController.Coverage.BRANCH) {
+        } else if (coverage == PEC_ToolController.Coverage.BRANCH) {
             result.append("TotalBranch");
         } else {
             throw new RuntimeException("Invalid Coverage");

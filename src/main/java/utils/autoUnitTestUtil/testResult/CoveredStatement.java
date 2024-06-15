@@ -1,4 +1,4 @@
-package utils.autoUnitTestUtil.concolicResult;
+package utils.autoUnitTestUtil.testResult;
 
 import utils.autoUnitTestUtil.cfg.CfgNode;
 import utils.autoUnitTestUtil.dataStructure.MarkedStatement;

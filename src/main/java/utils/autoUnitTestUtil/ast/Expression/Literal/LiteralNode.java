@@ -11,7 +11,8 @@ import utils.autoUnitTestUtil.dataStructure.MemoryModel;
 import org.eclipse.jdt.core.dom.*;
 
 public abstract class LiteralNode extends ExpressionNode {
-    public static AstNode executeLiteral(Expression expression, MemoryModel memoryModel) {
+
+    public static LiteralNode executeLiteral(Expression expression) {
         if (expression instanceof NumberLiteral) {
             return NumberLiteralNode.executeNumberLiteral((NumberLiteral) expression);
         } else if (expression instanceof CharacterLiteral) {

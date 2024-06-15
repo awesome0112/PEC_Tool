@@ -19,7 +19,7 @@ public class VariableDeclarationFragmentNode extends VariableDeclarationNode {
                 memoryModel.declarePrimitiveTypeVariable(type.getPrimitiveTypeCode(), name, ExpressionNode.executeExpression(initializer, memoryModel));
             } else if(baseType instanceof ArrayType) {
                 ArrayType type = (ArrayType) baseType;
-                memoryModel.declareArrayTypeVariable(type, name, ExpressionNode.executeExpression(initializer, memoryModel));
+                memoryModel.declareArrayTypeVariable(type, name, type.getDimensions(), ExpressionNode.executeExpression(initializer, memoryModel));
             } else {
                 throw new RuntimeException(baseType.getClass() + " is invalid!!");
             }

@@ -2,6 +2,7 @@ package utils.autoUnitTestUtil.ast.Expression.OperationExpression;
 
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
+import utils.autoUnitTestUtil.Z3Vars.Z3VariableWrapper;
 import utils.autoUnitTestUtil.ast.Expression.ExpressionNode;
 import utils.autoUnitTestUtil.ast.Expression.Literal.LiteralNode;
 import utils.autoUnitTestUtil.dataStructure.MemoryModel;
@@ -12,7 +13,7 @@ import java.util.List;
 public class ParenthesizedExpressionNode extends OperationExpressionNode {
     private ExpressionNode expression;
 
-    public static Expr createZ3Expression(ParenthesizedExpressionNode parenthesizedExpressionNode, Context ctx, List<Expr> vars, MemoryModel memoryModel) {
+    public static Expr createZ3Expression(ParenthesizedExpressionNode parenthesizedExpressionNode, Context ctx, List<Z3VariableWrapper> vars, MemoryModel memoryModel) {
         ExpressionNode operand = parenthesizedExpressionNode.expression;
 
         Expr Z3Operand = OperationExpressionNode.createZ3Expression(operand, ctx, vars, memoryModel);

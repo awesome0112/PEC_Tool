@@ -1,4 +1,4 @@
-package utils.autoUnitTestUtil.concolicResult;
+package utils.autoUnitTestUtil.testResult;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -6,8 +6,6 @@ import java.util.List;
 public class ConcolicTestResult {
     private List<ConcolicTestData> fullTestData = new ArrayList<>();
     private double fullCoverage = 0;
-    private double testingTime = 0;
-    private float usedMemory = 0;
 
     public void addToFullTestData(ConcolicTestData testData) {
         fullTestData.add(testData);
@@ -25,33 +23,22 @@ public class ConcolicTestResult {
         this.fullCoverage = (double) Math.round(fullCoverage * 100) / 100;
     }
 
-    public double getTestingTime() {
-        return testingTime;
-    }
+    public List<List<Object>> getFullTestDataSet() {
+        List<List<Object>> result = new ArrayList<>();
+        for (ConcolicTestData testData : fullTestData) {
+            result.add(testData.getTestDataSet());
+        }
 
-    public void setTestingTime(double testingTime) {
-        this.testingTime = round(testingTime);
-    }
-
-    public float getUsedMemory() {
-        return usedMemory;
-    }
-
-    public void setUsedMemory(float usedMemory) {
-        this.usedMemory = (float) round(usedMemory);
-    }
-
-    private double round(double number) {
-        return (double) Math.round(number * 100) / 100;
+        return result;
     }
 
     @Override
     public String toString() {
         StringBuilder result = new StringBuilder();
-        for (int i = 0; i < fullTestData.size(); i++) {
-            result.append("Test no " + i + ": " + fullTestData.get(i));
-        }
-
+//        for (int i = 0; i < fullTestData.size(); i++) {
+//            result.append("Test no " + i + ": " + fullTestData.get(i));
+//        }
+        result.append(fullTestData);
         return result.toString();
     }
 }

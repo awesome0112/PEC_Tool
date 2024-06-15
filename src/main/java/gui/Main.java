@@ -16,9 +16,9 @@ public class Main extends Application {
     @Override
     public void start(Stage stage) throws IOException {
         setUp();
-        Parent root = FXMLLoader.load(Objects.requireNonNull(getClass().getResource("/fxml/ChooseToolScene.fxml")));        Scene scene = new Scene(root);
+        Parent root = FXMLLoader.load(Objects.requireNonNull(getClass().getResource("/fxml/PEC_ToolScene.fxml")));        Scene scene = new Scene(root);
         stage.setResizable(false);
-        stage.setTitle("NTD-AUT tool");
+        stage.setTitle("PEC tool");
         stage.setScene(scene);
         stage.show();
     }

@@ -93,12 +93,20 @@ public class FindPath {
             currentPath.add(beginNode);
             if(beginNode instanceof CfgBoolExprNode) {
                 CfgBoolExprNode boolExprNode = (CfgBoolExprNode) beginNode;
+                CfgNode falseNode = boolExprNode.getFalseNode();
+                CfgNode trueNode = boolExprNode.getTrueNode();
+
+                // if uncovered node is false node
+                if (falseNode == endNode) {
+                    falseNode.setIsFalseNode(true);
+                    findPath(falseNode, endNode);
+                }
 
                 // CfgBoolExprNode has 2 child node is trueNode and falseNode
                 if(duplicateNode < DEPTH) {
-                    findPath(boolExprNode.getTrueNode(), endNode);
+                    findPath(trueNode, endNode);
                 }
-                CfgNode falseNode = boolExprNode.getFalseNode();
+
                 falseNode.setIsFalseNode(true);
                 findPath(falseNode, endNode);
 

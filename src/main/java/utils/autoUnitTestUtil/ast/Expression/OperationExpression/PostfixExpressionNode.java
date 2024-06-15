@@ -2,6 +2,7 @@ package utils.autoUnitTestUtil.ast.Expression.OperationExpression;
 
 import com.microsoft.z3.Context;
 import com.microsoft.z3.Expr;
+import utils.autoUnitTestUtil.Z3Vars.Z3VariableWrapper;
 import utils.autoUnitTestUtil.ast.AstNode;
 import utils.autoUnitTestUtil.ast.Expression.ExpressionNode;
 import utils.autoUnitTestUtil.ast.Expression.Literal.LiteralNode;
@@ -15,7 +16,7 @@ public class PostfixExpressionNode extends OperationExpressionNode {
     private ExpressionNode operand;
     private PostfixExpression.Operator operator;
 
-    public static Expr createZ3Expression(PostfixExpressionNode postfixExpressionNode, Context ctx, List<Expr> vars, MemoryModel memoryModel) {
+    public static Expr createZ3Expression(PostfixExpressionNode postfixExpressionNode, Context ctx, List<Z3VariableWrapper> vars, MemoryModel memoryModel) {
         ExpressionNode operand = postfixExpressionNode.operand;
         PostfixExpression.Operator operator = postfixExpressionNode.operator;
 

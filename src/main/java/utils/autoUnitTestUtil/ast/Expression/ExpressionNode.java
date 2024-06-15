@@ -13,7 +13,7 @@ public abstract class ExpressionNode extends AstNode {
         if (isOperationExpression(expression)) {
             return OperationExpressionNode.executeOperationExpression(expression, memoryModel);
         } else if (isLiteral(expression)) {
-            return LiteralNode.executeLiteral(expression, memoryModel);
+            return LiteralNode.executeLiteral(expression);
         } else if (expression instanceof ArrayInitializer) {
             return ArrayInitializerNode.executeArrayInitializer((ArrayInitializer) expression, memoryModel);
         } else if (expression instanceof ArrayCreation) {

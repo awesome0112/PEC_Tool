@@ -1,9 +1,8 @@
 package utils.autoUnitTestUtil.dataStructure;
 
-import utils.autoUnitTestUtil.ast.additionalNodes.Node;
 import utils.autoUnitTestUtil.cfg.CfgBoolExprNode;
 import utils.autoUnitTestUtil.cfg.CfgNode;
-import utils.autoUnitTestUtil.concolicResult.CoveredStatement;
+import utils.autoUnitTestUtil.testResult.CoveredStatement;
 
 import java.util.ArrayList;
 import java.util.HashSet;
